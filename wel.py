@@ -1,6 +1,6 @@
 import logging import random import asyncio from aiogram import Bot, Dispatcher, types from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup from aiogram.utils import executor from aiogram.dispatcher.filters import CommandStart from aiogram.dispatcher.middlewares import BaseMiddleware import aiohttp
 
-API_TOKEN = 'YOUR_BOT_TOKEN' OWNER_ID = 5260776753 CHANNEL_USERNAME = '@appifycreations'
+API_TOKEN = '7872751361:AAFX9seTY1upYixwLmerG8zcBFj6D8Pih0I' OWNER_ID = 5260776753 CHANNEL_USERNAME = '@appifycreations'
 
 bot = Bot(token=API_TOKEN) dp = Dispatcher(bot)
 
