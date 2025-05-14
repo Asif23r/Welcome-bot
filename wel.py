@@ -1,16 +1,18 @@
 import logging
 import random
 import asyncio
+import aiohttp
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils import executor
 from aiogram.dispatcher.filters import CommandStart
 from aiogram.dispatcher.middlewares import BaseMiddleware
-import aiohttp
 
-API_TOKEN = '7872751361:AAFX9seTY1upYixwLmerG8zcBFj6D8Pih0I'  # Replace with your Bot Token
-OWNER_ID = 5260776753  # Replace with your Telegram User ID
-CHANNEL_USERNAME = '@appifycreations'  # Replace with your channel username
+# --- Bot Config ---
+API_TOKEN = '7872751361:AAFX9seTY1upYixwLmerG8zcBFj6D8Pih0I'
+OWNER_ID = 5260776753
+CHANNEL_USERNAME = '@appifycreations'
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
@@ -23,22 +25,23 @@ class ForceJoinMiddleware(BaseMiddleware):
         if message.chat.type != 'private':
             return
         try:
-            # Check if user is a member of the channel
             member = await bot.get_chat_member(CHANNEL_USERNAME, message.from_user.id)
             if member.status in ['left', 'kicked']:
-                # Send button to join channel
-                btn = InlineKeyboardMarkup().add(
-                    InlineKeyboardButton("✅ Join Channel", url=f"https://t.me/{CHANNEL_USERNAME.strip('@')}")
-                )
-                await message.answer("Please join our channel first to use the bot:", reply_markup=btn)
-                raise Exception("User not joined channel")
+                raise Exception("Not joined")
         except:
-            # If the user is not in the channel, send a message with a join button
-            btn = InlineKeyboardMarkup().add(
-                InlineKeyboardButton("✅ Join Channel", url=f"https://t.me/{CHANNEL_USERNAME.strip('@')}")
+            photo_url = "https://telegra.ph/file/1c9d7b48f5ae02bdf9b20.jpg"  # Replace with your image
+            caption = (
+                "🤖 *Welcome to raazxBot!*\n\n"
+                "⚙️ _Your assistant for group welcome and management._\n\n"
+                "🔒 Please join our official channel to continue.\n\n"
+                "🆔 *Bot Owner:* [Raaz](https://t.me/appifycreations)"
             )
-            await message.answer("Join our channel to continue:", reply_markup=btn)
-            raise
+            buttons = InlineKeyboardMarkup(row_width=2).add(
+                InlineKeyboardButton("✅ Join Channel", url=f"https://t.me/{CHANNEL_USERNAME.strip('@')}"),
+                InlineKeyboardButton("👤 Owner", url=f"https://t.me/{(await bot.get_chat(OWNER_ID)).username}")
+            )
+            await message.answer_photo(photo=photo_url, caption=caption, reply_markup=buttons, parse_mode="Markdown")
+            raise Exception("User not in channel")
 
 dp.middleware.setup(ForceJoinMiddleware())
 
@@ -46,51 +49,46 @@ dp.middleware.setup(ForceJoinMiddleware())
 @dp.message_handler(CommandStart())
 async def start_handler(message: types.Message):
     name = message.from_user.first_name
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("✅ Join Channel", url=f"https://t.me/{CHANNEL_USERNAME.strip('@')}"))
-    keyboard.add(InlineKeyboardButton("👤 Owner", url=f"https://t.me/{(await bot.get_chat(OWNER_ID)).username}"))
+    keyboard = InlineKeyboardMarkup(row_width=2).add(
+        InlineKeyboardButton("✅ Join Channel", url=f"https://t.me/{CHANNEL_USERNAME.strip('@')}"),
+        InlineKeyboardButton("👤 Owner", url=f"https://t.me/{(await bot.get_chat(OWNER_ID)).username}")
+    )
+    await message.answer(
+        f"Hello {name}, welcome to **raazxBot**!",
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
 
-    await message.answer(f"Hello {name}, welcome to **raazxBot**!", reply_markup=keyboard, parse_mode="Markdown")
-
-    # Notify the bot owner about the new user
     await bot.send_message(
         OWNER_ID,
-        f"New user started bot:\n\n"
-        f"Name: {message.from_user.full_name}\n"
-        f"Username: @{message.from_user.username}\n"
-        f"User ID: {message.from_user.id}"
+        f"🚀 *New user started bot!*\n\n"
+        f"👤 Name: {message.from_user.full_name}\n"
+        f"🔗 Username: @{message.from_user.username}\n"
+        f"🆔 User ID: {message.from_user.id}",
+        parse_mode="Markdown"
     )
 
 # --- Group Join Welcome ---
 @dp.chat_member_handler()
 async def welcome_new_member(update: types.ChatMemberUpdated):
-    # Ignore if the new member is a bot
     if update.new_chat_member.user.is_bot:
         return
-
-    # Check if the user just joined the group
     if update.old_chat_member.status == 'left' and update.new_chat_member.status == 'member':
         name = update.new_chat_member.user.first_name
         user_id = update.new_chat_member.user.id
-
-        # Get a random image URL
-        image_url = await get_random_pinterest_image()
+        image_url = await get_random_image()
         welcome_msg = f"Welcome, [{name}](tg://user?id={user_id})!"
-
-        # Send a welcome message with the image
         await bot.send_photo(update.chat.id, image_url, caption=welcome_msg, parse_mode='Markdown')
 
-# --- Pinterest Image Fetch ---
-async def get_random_pinterest_image():
+# --- Unsplash Random Image ---
+async def get_random_image():
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get("https://source.unsplash.com/random/600x400/?nature,tech") as resp:
+            async with session.get("https://source.unsplash.com/random/600x400/?welcome") as resp:
                 return str(resp.url)
     except:
-        # Fallback image if request fails
         return "https://source.unsplash.com/random/600x400"
 
 # --- Run Bot ---
-if __name__ == "__main__":
+if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
-
